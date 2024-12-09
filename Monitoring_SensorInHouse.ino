@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
+#define GAS_THRESHOLD 3500
 //----------------
 TaskHandle_t Task1;
 TaskHandle_t Task2;
@@ -351,10 +352,19 @@ float measureAndDisplayLM35() {
 void measureAndDisplayMQ2() {
   mq2Value = analogRead(mq2Pin);  // Đọc giá trị ADC từ MQ2
   lcd.setCursor(0, 3);
-  lcd.print("MQ2 Value: ");
-  if (mq2Value >= 0 && mq2Value <= 100) mq2Value = 0;
-  lcd.print(mq2Value);  // Hiển thị giá trị đọc được từ MQ2
-  lcd.print("     ");   // Xóa dấu hiệu còn lại
+  lcd.print("Gas Value: ");
+  if (mq2Value >= 0 && mq2Value <= GAS_THRESHOLD)
+  {
+    lcd.setCursor(11, 3);
+    lcd.print(" ");
+    mq2Value = 0;
+    lcd.print(mq2Value);
+  } 
+  else
+  {
+    lcd.print(mq2Value); 
+    
+  }
   checkGasLevel(mq2Value);
   vTaskDelay(500 / portTICK_PERIOD_MS);
 }
@@ -409,7 +419,7 @@ void checkTemperLevel(float temperature) {
 
 // Hàm kiểm tra giá trị MQ2 và điều khiển buzzer
 void checkGasLevel(int mq2Value) {
-  if (mq2Value > 100) {
+  if (mq2Value > GAS_THRESHOLD) {
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Gas Over Threshold");
