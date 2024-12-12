@@ -1,4 +1,4 @@
- /*
+/*
  * Monitoring_SensorInHouse.ino
  *
  * Created on: Aug 30, 2024
@@ -6,7 +6,7 @@
 
 /*******************************************************************************
  * Includes
- ******************************************************************************/ 
+ ******************************************************************************/
 #include <Wire.h>              /* Library for I2C communication */
 #include <LiquidCrystal_I2C.h> /* Library for controlling LCD with I2C */
 #include <DHT.h>               /* Library for interfacing with DHT sensors */
@@ -22,7 +22,7 @@
 /* Define timer interval for periodic updates (in milliseconds) */
 #define TIMER_UPDATE 10000
 
-#define THRESHOLD_TEMP_MIN 0 /* Define minimum and maximum temperature thresholds */
+#define THRESHOLD_TEMP_MIN 0    /* Define minimum and maximum temperature thresholds */
 #define THRESHOLD_TEMP_AVG1 50  /* Threshold for average temperature level 1 */
 #define THRESHOLD_TEMP_AVG2 100 /* Threshold for average temperature level 2 */
 #define THRESHOLD_TEMP_MAX 150  /* Maximum temperature threshold */
@@ -33,6 +33,14 @@
 /* Define maximum attempts to connect to WiFi */
 #define WIFI_CONNECT_COUNT 20
 
+/* DHT Sensor configuration */
+#define DHTTYPE DHT22 /* Define the type of DHT sensor (DHT22) */
+
+/* Define I2C address and dimensions for 20x4 LCD */
+LiquidCrystal_I2C lcd(0x27, 20, 4); /* LCD object with I2C address 0x27 and size 20x4 */
+
+DHT dht(dhtPin, DHTTYPE); /* Initialize DHT sensor with pin and type */
+
 /*******************************************************************************
  * Task Handle
  ******************************************************************************/
@@ -40,8 +48,6 @@
 TaskHandle_t Task1; /* Handle for Task 1 */
 TaskHandle_t Task2; /* Handle for Task 2 */
 
-/* Define I2C address and dimensions for 20x4 LCD */
-LiquidCrystal_I2C lcd(0x27, 20, 4); /* LCD object with I2C address 0x27 and size 20x4 */
 
 /*******************************************************************************
  * Variables
@@ -94,10 +100,6 @@ bool isDHTActive = false;     /* Status of the DHT sensor */
 bool isLM35Active = false;    /* Status of the LM35 sensor */
 bool isMQ2Active = false;     /* Status of the MQ2 sensor */
 
-/* DHT Sensor configuration */
-#define DHTTYPE DHT22     /* Define the type of DHT sensor (DHT22) */
-DHT dht(dhtPin, DHTTYPE); /* Initialize DHT sensor with pin and type */
-
 /* Variables to store button states */
 int lastButton1State = HIGH; /* Last state of Button 1 */
 int lastButton2State = HIGH; /* Last state of Button 2 */
@@ -110,7 +112,6 @@ int button2State = 0; /* Current state of Button 2 */
 int button3State = 0; /* Current state of Button 3 */
 int button4State = 0; /* Current state of Button 4 */
 int button5State = 0; /* Current state of Button 5 */
-
 
 /*******************************************************************************
  * Init System
@@ -172,7 +173,6 @@ void setup() {
     0          /* Core on which to run the task (Core 0) */
   );
 
-
   xTaskCreatePinnedToCore(
     Task2code, /* Pointer to the function that implements the task logic */
     "Task2",   /* Descriptive name of the task for debugging purposes */
@@ -198,10 +198,10 @@ void Task1code(void *pvParameters) {
 
     /* If button 4 is pressed (change from HIGH to LOW), activate all sensors */
     if (button4State == LOW && lastButton4State == HIGH) {
-      isDHTActive = true; /* Activate the DHT sensor */
-      isMQ2Active = true; /* Deactivate MQ2 sensor */
+      isDHTActive = true;  /* Activate the DHT sensor */
+      isMQ2Active = true;  /* Deactivate MQ2 sensor */
       isLM35Active = true; /* Activate the LM35 sensor */
-      lcd.clear(); /* Clear the display */
+      lcd.clear();         /* Clear the display */
     }
 
     /* If button 1 is pressed, activate the DHT sensor and deactivate the LM35 and MQ2 sensors */
@@ -411,7 +411,6 @@ float measureAndDisplayLM352() {
   /* Return the measured temperature value */
   return temperatureLM35;
 }
-
 
 float measureAndDisplayLM35() {
   /* Read the ADC value from the LM35 sensor */
