@@ -48,7 +48,6 @@ DHT dht(dhtPin, DHTTYPE); /* Initialize DHT sensor with pin and type */
 TaskHandle_t Task1; /* Handle for Task 1 */
 TaskHandle_t Task2; /* Handle for Task 2 */
 
-
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -162,7 +161,6 @@ void setup() {
 
   dht.begin(); /* Begin the DHT sensor (DHT22) */
 
-
   xTaskCreatePinnedToCore(
     Task1code, /* Task function to be executed */
     "Task1",   /* Name of the task */
@@ -254,7 +252,6 @@ void Task1code(void *pvParameters) {
   }
 }
 
-
 /*******************************************************************************
  * Task 2
  ******************************************************************************/
@@ -336,8 +333,6 @@ void write_to_google_sheet(String params) {
   http.end();
 }
 
-
-
 void loop() {
 }
 
@@ -379,8 +374,6 @@ float measureAndDisplayDHT11() {
     return temperatureDHT11;
   }
 }
-
-
 
 float measureAndDisplayLM352() {
   /* Read the ADC value from the second LM35 sensor */
@@ -448,7 +441,6 @@ float measureAndDisplayLM35() {
   return temperatureLM35;
 }
 
-
 void measureAndDisplayMQ2() {
   /* Read the ADC value from the MQ2 sensor */
   mq2Value = analogRead(mq2Pin);
@@ -475,8 +467,6 @@ void measureAndDisplayMQ2() {
   /* Delay the task for 500 milliseconds, considering the FreeRTOS tick period */
   vTaskDelay(500 / portTICK_PERIOD_MS);
 }
-
-
 
 void updateLeds(float temperature) {
   /* If the temperature is between the minimum threshold and the first average threshold,
@@ -508,7 +498,6 @@ void updateLeds(float temperature) {
   }
 }
 
-
 void checkTemperLevel(float temperature) {
   /* If the temperature is greater than the first threshold and less than or equal to the second threshold */
   if (temperature > THRESHOLD_TEMP_AVG1 && temperature <= THRESHOLD_TEMP_AVG2) {
@@ -530,7 +519,6 @@ void checkTemperLevel(float temperature) {
   }
 }
 
-
 void checkGasLevel(int mq2Value) {
   /* Check if the MQ2 sensor value exceeds the gas threshold */
   if (mq2Value > GAS_THRESHOLD) {
@@ -550,7 +538,6 @@ void checkGasLevel(int mq2Value) {
     buzzerOff();
   }
 }
-
 
 void buzzerOn() {
   /* Set the buzzer pin to HIGH to activate the buzzer */
