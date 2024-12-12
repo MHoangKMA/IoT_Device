@@ -30,6 +30,9 @@
 /* Define the update value for adjusting readings */
 #define VALUE_UPDATE 0.5
 
+/*Define reference voltage */
+#define REF_VOLTAGE 3.3
+
 /* Define maximum attempts to connect to WiFi */
 #define WIFI_CONNECT_COUNT 20
 
@@ -389,7 +392,7 @@ float measureAndDisplayLM352() {
   }
 
   /* Convert the ADC value to voltage (3.3V is the reference voltage) */
-  float voltage2 = adcValue2 * (3.3 / 4095.0);
+  float voltage2 = adcValue2 * (REF_VOLTAGE / 4095.0);
 
   /* Convert the voltage to temperature in Celsius using LM35 characteristics 
      (10 mV corresponds to 1°C, so multiply by 100) */
@@ -419,7 +422,7 @@ float measureAndDisplayLM35() {
   }
 
   /* Convert the ADC value to voltage (3.3V is the reference voltage) */
-  float voltage = adcValue * (3.3 / 4095.0);
+  float voltage = adcValue * (REF_VOLTAGE / 4095.0);
 
   /* Convert the voltage to temperature in Celsius using LM35 characteristics 
      (10 mV corresponds to 1°C, so multiply by 100) */
