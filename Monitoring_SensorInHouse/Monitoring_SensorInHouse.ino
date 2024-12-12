@@ -16,8 +16,10 @@
 /*******************************************************************************
  * MACRO
  ******************************************************************************/
-/* Define gas threshold for detecting dangerous levels */
-#define GAS_THRESHOLD 3500
+
+#define GAS_THRESHOLD 3500 /* Define gas threshold for detecting dangerous levels */
+
+#define GAS_THRESHOLD_MIN 0 /* Define minimum and maximum temperature thresholds */
 
 /* Define timer interval for periodic updates (in milliseconds) */
 #define TIMER_UPDATE 10000
@@ -26,6 +28,7 @@
 #define THRESHOLD_TEMP_AVG1 50  /* Threshold for average temperature level 1 */
 #define THRESHOLD_TEMP_AVG2 100 /* Threshold for average temperature level 2 */
 #define THRESHOLD_TEMP_MAX 150  /* Maximum temperature threshold */
+
 
 /* Define the update value for adjusting readings */
 #define VALUE_UPDATE 0.5
@@ -453,7 +456,7 @@ void measureAndDisplayMQ2() {
   lcd.print("Gas Value: ");
 
   /* Check if the MQ2 value is within the safe range */
-  if (mq2Value >= 0 && mq2Value <= GAS_THRESHOLD) {
+  if (mq2Value >= GAS_THRESHOLD_MIN && mq2Value <= GAS_THRESHOLD) {
     /* Clear any previous value at the cursor position and reset the gas value to zero */
     lcd.setCursor(11, 3);
     lcd.print(" ");
