@@ -1,17 +1,28 @@
+ /*
+ * Monitoring_SensorInHouse.ino
+ *
+ * Created on: Aug 30, 2024
+ */
+
+/*******************************************************************************
+ * Includes
+ ******************************************************************************/ 
 #include <Wire.h>              /* Library for I2C communication */
 #include <LiquidCrystal_I2C.h> /* Library for controlling LCD with I2C */
 #include <DHT.h>               /* Library for interfacing with DHT sensors */
 #include <WiFi.h>              /* Library for WiFi connectivity */
 #include <HTTPClient.h>        /* Library for handling HTTP requests */
 
+/*******************************************************************************
+ * MACRO
+ ******************************************************************************/
 /* Define gas threshold for detecting dangerous levels */
 #define GAS_THRESHOLD 3500
 
 /* Define timer interval for periodic updates (in milliseconds) */
 #define TIMER_UPDATE 10000
 
-/* Define minimum and maximum temperature thresholds */
-#define THRESHOLD_TEMP_MIN 0
+#define THRESHOLD_TEMP_MIN 0 /* Define minimum and maximum temperature thresholds */
 #define THRESHOLD_TEMP_AVG1 50  /* Threshold for average temperature level 1 */
 #define THRESHOLD_TEMP_AVG2 100 /* Threshold for average temperature level 2 */
 #define THRESHOLD_TEMP_MAX 150  /* Maximum temperature threshold */
@@ -22,12 +33,19 @@
 /* Define maximum attempts to connect to WiFi */
 #define WIFI_CONNECT_COUNT 20
 
+/*******************************************************************************
+ * Task Handle
+ ******************************************************************************/
 /* Task handles for managing FreeRTOS tasks */
 TaskHandle_t Task1; /* Handle for Task 1 */
 TaskHandle_t Task2; /* Handle for Task 2 */
 
 /* Define I2C address and dimensions for 20x4 LCD */
 LiquidCrystal_I2C lcd(0x27, 20, 4); /* LCD object with I2C address 0x27 and size 20x4 */
+
+/*******************************************************************************
+ * Variables
+ ******************************************************************************/
 
 /*WiFi Configuration*/
 const char *ssid = "P5B";            /* WiFi SSID for network connection */
@@ -50,7 +68,6 @@ const int button5Pin = 27; /* Button 5 - Read data from MQ2 */
 const int dhtPin = 15;  /* Pin for DHT22 sensor */
 const int lm35Pin = 33; /* Pin for LM35 sensor */
 const int mq2Pin = 34;  /* Pin for MQ2 sensor */
-
 
 /* Pins connected to three LEDs */
 const int greenLedPin = 13;  /* Pin for green LED */
@@ -95,7 +112,9 @@ int button4State = 0; /* Current state of Button 4 */
 int button5State = 0; /* Current state of Button 5 */
 
 
-
+/*******************************************************************************
+ * Init System
+ ******************************************************************************/
 void setup() {
   Serial.begin(115200); /* Begin serial communication at 115200 baud rate */
   lcd.init();           /* Initialize the LCD */
@@ -165,12 +184,15 @@ void setup() {
   );
 }
 
+/*******************************************************************************
+ * Task 1 
+ ******************************************************************************/
 void Task1code(void *pvParameters) {
   /* Infinite loop to continuously check button states and sensor activation */
   for (;;) {
     /* Read the state of each button */
-    button1State = digitalRead(button1Pin);
-    button2State = digitalRead(button2Pin);
+    button1State = digitalRead(button1Pin); /* Read button 1 */
+    button2State = digitalRead(button2Pin); /* Read button 2 */
     button3State = digitalRead(button3Pin); /* Read button for MQ2 */
     button4State = digitalRead(button4Pin); /* Read button for activating all sensors */
 
@@ -178,7 +200,7 @@ void Task1code(void *pvParameters) {
     if (button4State == LOW && lastButton4State == HIGH) {
       isDHTActive = true; /* Activate the DHT sensor */
       isMQ2Active = true; /* Deactivate MQ2 sensor */
-      isLM35Active = true;
+      isLM35Active = true; /* Activate the LM35 sensor */
       lcd.clear(); /* Clear the display */
     }
 
@@ -233,7 +255,9 @@ void Task1code(void *pvParameters) {
 }
 
 
-
+/*******************************************************************************
+ * Task 2
+ ******************************************************************************/
 void Task2code(void *pvParameters) {
   /* Infinite loop to continuously check and send data */
   for (;;) {
@@ -271,8 +295,9 @@ void Task2code(void *pvParameters) {
   }
 }
 
-
-
+/*******************************************************************************
+ * APIs
+ ******************************************************************************/
 void write_to_google_sheet(String params) {
   /* Create an HTTPClient object to handle the request */
   HTTPClient http;
@@ -543,3 +568,6 @@ void buzzerOff() {
   /* Ensure the buzzer pin is set to LOW, turning the buzzer off */
   digitalWrite(buzzerPin, LOW);
 }
+/*******************************************************************************
+ * EOF
+ ******************************************************************************/
