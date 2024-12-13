@@ -17,6 +17,7 @@
  * MACRO
  ******************************************************************************/
 
+#define STACK_SIZE 8192    /* Stack size for stack */
 #define GAS_THRESHOLD 3500 /* Define gas threshold for detecting dangerous levels */
 
 #define GAS_MIN 0 /* Define gas value equal zero */
@@ -29,6 +30,9 @@
 #define THRESHOLD_TEMP_AVG2 100 /* Threshold for average temperature level 2 */
 #define THRESHOLD_TEMP_MAX 150  /* Maximum temperature threshold */
 
+#define VOLTAGE_TO_CELSIUS_FACTOR 100 /*Define voltage to celsius factor*/
+
+#define ADC_MAX_VALUE 4095.0 /*Define ADC max value*/
 
 /* Define the update value for adjusting readings */
 #define VALUE_UPDATE 0.5
@@ -41,6 +45,13 @@
 
 /* DHT Sensor configuration */
 #define DHTTYPE DHT22 /* Define the type of DHT sensor (DHT22) */
+
+/*Define core use for task handle*/
+#define CORE_0 0
+#define CORE_1 1
+
+/*Defifne priority level */
+#define PRIORITY_LEVEL_1 1
 
 /* Define I2C address and dimensions for 20x4 LCD */
 LiquidCrystal_I2C lcd(0x27, 20, 4); /* LCD object with I2C address 0x27 and size 20x4 */
@@ -121,7 +132,8 @@ int button5State = 0; /* Current state of Button 5 */
 /*******************************************************************************
  * Init System
  ******************************************************************************/
-void setup() {
+void setup()
+{
   Serial.begin(115200); /* Begin serial communication at 115200 baud rate */
   lcd.init();           /* Initialize the LCD */
   lcd.backlight();      /* Turn on the LCD backlight */
@@ -132,18 +144,22 @@ void setup() {
   int retryCount = 0;         /* Initialize retry counter */
 
   /* Attempt to connect to WiFi until successful or retry count exceeds the limit */
-  while (WiFi.status() != WL_CONNECTED && retryCount < WIFI_CONNECT_COUNT) {
+  while (WiFi.status() != WL_CONNECTED && retryCount < WIFI_CONNECT_COUNT)
+  {
     delay(500);        /* Wait for 500 milliseconds before retrying */
     Serial.print("."); /* Print dot for each retry attempt */
     retryCount++;      /* Increment retry counter */
   }
 
   /* Check if WiFi is connected */
-  if (WiFi.status() == WL_CONNECTED) {
+  if (WiFi.status() == WL_CONNECTED)
+  {
     Serial.println("WiFi connected!"); /* Print success message */
     lcd.print("WiFi connected!");      /* Display success message on LCD */
     isConnectedWifi = true;            /* Set WiFi connection status to true */
-  } else {
+  }
+  else
+  {
     Serial.println("WiFi connection failed."); /* Print failure message */
     lcd.print("WiFi failed.");                 /* Display failure message on LCD */
     isConnectedWifi = false;                   /* Set WiFi connection status to false */
@@ -168,32 +184,40 @@ void setup() {
   dht.begin(); /* Begin the DHT sensor (DHT22) */
 
   xTaskCreatePinnedToCore(
-    Task1code, /* Task function to be executed */
-    "Task1",   /* Name of the task */
-    8192,      /* Stack size for the task */
-    NULL,      /* Parameter passed to the task (not used) */
-    1,         /* Task priority level */
-    &Task1,    /* Task handle (not used) */
-    0          /* Core on which to run the task (Core 0) */
+      Task1code,        /* Task function to be executed */
+      "Task1",          /* Name of the task */
+      STACK_SIZE,       /* Stack size for the task */
+      NULL,             /* Parameter passed to the task (not used) */
+      PRIORITY_LEVEL_1, /* Task priority level */
+      &Task1,           /* Task handle (not used) */
+      CORE_0            /* Core on which to run the task (Core 0) */
   );
 
   xTaskCreatePinnedToCore(
-    Task2code, /* Pointer to the function that implements the task logic */
-    "Task2",   /* Descriptive name of the task for debugging purposes */
-    8192,      /* Size of the stack allocated for the task (in bytes) */
-    NULL,      /* Parameter passed to the task; NULL means no parameters */
-    1,         /* Task priority; higher numbers mean higher priority */
-    &Task2,    /* Task handle, used for managing or referencing the task */
-    1          /* Core on which the task should run; Core 1 is specified */
+      Task2code,        /* Pointer to the function that implements the task logic */
+      "Task2",          /* Descriptive name of the task for debugging purposes */
+      STACK_SIZE,       /* Size of the stack allocated for the task (in bytes) */
+      NULL,             /* Parameter passed to the task; NULL means no parameters */
+      PRIORITY_LEVEL_1, /* Task priority; higher numbers mean higher priority */
+      &Task2,           /* Task handle, used for managing or referencing the task */
+      CORE_1            /* Core on which the task should run; Core 1 is specified */
   );
 }
 
 /*******************************************************************************
- * Task 1 
+ * Task 1
  ******************************************************************************/
-void Task1code(void *pvParameters) {
+/*
+ * @name: Task1code
+ * ----------------------------
+ * @brief: Runs on Core 0. Manages button states to activate corresponding sensors (DHT22, LM35, MQ2).
+ *         Updates the display and LED indicators based on the active sensor.
+ */
+void Task1code(void *pvParameters)
+{
   /* Infinite loop to continuously check button states and sensor activation */
-  for (;;) {
+  for (;;)
+  {
     /* Read the state of each button */
     button1State = digitalRead(button1Pin); /* Read button 1 */
     button2State = digitalRead(button2Pin); /* Read button 2 */
@@ -201,7 +225,8 @@ void Task1code(void *pvParameters) {
     button4State = digitalRead(button4Pin); /* Read button for activating all sensors */
 
     /* If button 4 is pressed (change from HIGH to LOW), activate all sensors */
-    if (button4State == LOW && lastButton4State == HIGH) {
+    if (button4State == LOW && lastButton4State == HIGH)
+    {
       isDHTActive = true;  /* Activate the DHT sensor */
       isMQ2Active = true;  /* Deactivate MQ2 sensor */
       isLM35Active = true; /* Activate the LM35 sensor */
@@ -209,7 +234,8 @@ void Task1code(void *pvParameters) {
     }
 
     /* If button 1 is pressed, activate the DHT sensor and deactivate the LM35 and MQ2 sensors */
-    if (button1State == LOW && lastButton1State == HIGH) {
+    if (button1State == LOW && lastButton1State == HIGH)
+    {
       isDHTActive = true;         /* Activate the DHT sensor */
       isLM35Active = false;       /* Deactivate the LM35 sensor */
       isMQ2Active = true;         /* Deactivate the MQ2 sensor */
@@ -218,7 +244,8 @@ void Task1code(void *pvParameters) {
     }
 
     /* If button 2 is pressed, activate the LM35 sensor and deactivate the DHT and MQ2 sensors */
-    if (button2State == LOW && lastButton2State == HIGH) {
+    if (button2State == LOW && lastButton2State == HIGH)
+    {
       isDHTActive = false; /* Deactivate the DHT sensor */
       isLM35Active = true; /* Activate the LM35 sensor */
       isMQ2Active = true;  /* Deactivate the MQ2 sensor */
@@ -227,7 +254,8 @@ void Task1code(void *pvParameters) {
     }
 
     /* If button 3 is pressed, activate the MQ2 sensor and deactivate the DHT and LM35 sensors */
-    if (button3State == LOW && lastButton3State == HIGH) {
+    if (button3State == LOW && lastButton3State == HIGH)
+    {
       isDHTActive = false;       /* Deactivate the DHT sensor */
       isLM35Active = false;      /* Deactivate the LM35 sensor */
       isMQ2Active = true;        /* Activate the MQ2 sensor */
@@ -236,17 +264,20 @@ void Task1code(void *pvParameters) {
     }
 
     /* Update the display and LED indicators based on the active sensor */
-    if (isDHTActive == true) {
+    if (isDHTActive == true)
+    {
       temperatureDHT11 = measureAndDisplayDHT11(); /* Measure and display DHT temperature */
       updateLeds(temperatureDHT11);                /* Update LED indicators based on temperature */
     }
 
-    if (isLM35Active == true) {
+    if (isLM35Active == true)
+    {
       temperatureLM35 = measureAndDisplayLM35(); /* Measure and display LM35 temperature */
       updateLeds(temperatureLM35);               /* Update LED indicators based on temperature */
     }
 
-    if (isMQ2Active == true) {
+    if (isMQ2Active == true)
+    {
       measureAndDisplayMQ2(); /* Measure and display MQ2 gas level */
     }
 
@@ -261,14 +292,23 @@ void Task1code(void *pvParameters) {
 /*******************************************************************************
  * Task 2
  ******************************************************************************/
-void Task2code(void *pvParameters) {
+/*
+ * @name: Task2code
+ * ----------------------------
+ * @brief: Runs on Core 1. Sends sensor data to Google Sheets via HTTP requests periodically
+ *         or when a significant change in data is detected.
+ */
+void Task2code(void *pvParameters)
+{
   /* Infinite loop to continuously check and send data */
-  for (;;) {
+  for (;;)
+  {
     /* Get the current time in milliseconds */
     unsigned long currentMillis = millis();
 
     /* Only send data if the specified interval has passed */
-    if (currentMillis - previousMillis >= sendInterval) {
+    if (currentMillis - previousMillis >= sendInterval)
+    {
       previousMillis = currentMillis;
 
       /* Check if there has been a significant change in the values */
@@ -278,7 +318,8 @@ void Task2code(void *pvParameters) {
       bool isMQ2ValueChanged = (mq2Value != lastMQ2Value);
 
       /* Only send data if there is a change and the WiFi is connected */
-      if (isConnectedWifi == true && (isTemperatureDHT11Changed || isHumidityDHT11Changed || isTemperatureLM35Changed || isMQ2ValueChanged)) {
+      if (isConnectedWifi == true && (isTemperatureDHT11Changed || isHumidityDHT11Changed || isTemperatureLM35Changed || isMQ2ValueChanged))
+      {
         /* Construct the query parameters to send to Google Sheets */
         String params = "sts=write&tempDHT11=" + String(temperatureDHT11) + "&humdDHT11=" + String(humidityDHT11) + "&tempLM35=" + String(temperatureLM35) + "&mq2Value=" + String(mq2Value);
 
@@ -301,7 +342,13 @@ void Task2code(void *pvParameters) {
 /*******************************************************************************
  * APIs
  ******************************************************************************/
-void write_to_google_sheet(String params) {
+/*
+ * @name: write_to_google_sheet
+ * ----------------------------
+ * @brief: Sends sensor data to Google Sheets using an HTTP request to the Google Apps Script URL.
+ */
+void write_to_google_sheet(String params)
+{
   /* Create an HTTPClient object to handle the request */
   HTTPClient http;
 
@@ -327,10 +374,13 @@ void write_to_google_sheet(String params) {
   Serial.println(httpCode);
 
   /* If the HTTP request was successful (code > 0), read and print the response */
-  if (httpCode > 0) {
+  if (httpCode > 0)
+  {
     String payload = http.getString();
     Serial.println("Response: " + payload);
-  } else {
+  }
+  else
+  {
     /* If the HTTP request failed, print an error message */
     Serial.println("Error: Unable to connect to server.");
   }
@@ -339,17 +389,26 @@ void write_to_google_sheet(String params) {
   http.end();
 }
 
-void loop() {
+void loop()
+{
 }
 
-float measureAndDisplayDHT11() {
+/*
+ * @name: measureAndDisplayDHT11
+ * ----------------------------
+ * @brief: Reads temperature and humidity from the DHT22 sensor. Displays the values on the LCD
+ *         and checks temperature thresholds to trigger warnings.
+ */
+float measureAndDisplayDHT11()
+{
   /* Measure temperature from the DHT22 sensor */
   temperatureDHT11 = dht.readTemperature();
   /* Measure humidity from the DHT22 sensor */
   humidityDHT11 = dht.readHumidity();
 
   /* Check if the readings are invalid (NaN values) */
-  if (isnan(temperatureDHT11) || isnan(humidityDHT11)) {
+  if (isnan(temperatureDHT11) || isnan(humidityDHT11))
+  {
     Serial.println("Error reading DHT22!");
     /* Display an error message on the LCD */
     lcd.setCursor(0, 1);
@@ -357,7 +416,9 @@ float measureAndDisplayDHT11() {
     /* Delay to allow the error message to remain visible */
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     return -1; /* Return an error indicator */
-  } else {
+  }
+  else
+  {
     /* Display the temperature on the LCD */
     lcd.setCursor(0, 1);
     lcd.print("DHT11 Temp: ");
@@ -381,12 +442,20 @@ float measureAndDisplayDHT11() {
   }
 }
 
-float measureAndDisplayLM352() {
+/*
+ * @name: measureAndDisplayLM352
+ * ----------------------------
+ * @brief: Reads temperature from the LM35 sensor. Displays the value on the LCD and checks
+ *         temperature thresholds to trigger warnings.
+ */
+float measureAndDisplayLM352()
+{
   /* Read the ADC value from the second LM35 sensor */
   int adcValue2 = analogRead(lm35Pin);
 
   /* If the ADC value is invalid (less than or equal to zero), display an error message */
-  if (adcValue2 <= 0) {
+  if (adcValue2 <= 0)
+  {
     Serial.println("Error reading LM35!");
     lcd.setCursor(0, 1);
     lcd.print("Error reading LM35!");
@@ -395,9 +464,9 @@ float measureAndDisplayLM352() {
   }
 
   /* Convert the ADC value to voltage (3.3V is the reference voltage) */
-  float voltage2 = adcValue2 * (REF_VOLTAGE / 4095.0);
+  float voltage2 = adcValue2 * (REF_VOLTAGE / ADC_MAX_VALUE);
 
-  /* Convert the voltage to temperature in Celsius using LM35 characteristics 
+  /* Convert the voltage to temperature in Celsius using LM35 characteristics
      (10 mV corresponds to 1°C, so multiply by 100) */
   temperatureLM35 = voltage2 * 100;
 
@@ -411,12 +480,20 @@ float measureAndDisplayLM352() {
   return temperatureLM35;
 }
 
-float measureAndDisplayLM35() {
+/*
+ * @name: measureAndDisplayLM35
+ * ----------------------------
+ * @brief: Reads temperature from the LM35 sensor. Displays the value on the LCD and checks
+ *         temperature thresholds to trigger warnings.
+ */
+float measureAndDisplayLM35()
+{
   /* Read the ADC value from the LM35 sensor */
   int adcValue = analogRead(lm35Pin);
 
   /* If the ADC value is invalid (less than or equal to zero), display an error message */
-  if (adcValue <= 0) {
+  if (adcValue <= 0)
+  {
     Serial.println("Error reading LM35!");
     lcd.setCursor(0, 1);
     lcd.print("Error reading LM35!");
@@ -425,11 +502,11 @@ float measureAndDisplayLM35() {
   }
 
   /* Convert the ADC value to voltage (3.3V is the reference voltage) */
-  float voltage = adcValue * (REF_VOLTAGE / 4095.0);
+  float voltage = adcValue * (REF_VOLTAGE / ADC_MAX_VALUE);
 
-  /* Convert the voltage to temperature in Celsius using LM35 characteristics 
+  /* Convert the voltage to temperature in Celsius using LM35 characteristics
      (10 mV corresponds to 1°C, so multiply by 100) */
-  temperatureLM35 = voltage * 100;
+  temperatureLM35 = voltage * VOLTAGE_TO_CELSIUS_FACTOR;
 
   /* Display the temperature on the LCD */
   lcd.setCursor(0, 0);
@@ -447,7 +524,14 @@ float measureAndDisplayLM35() {
   return temperatureLM35;
 }
 
-void measureAndDisplayMQ2() {
+/*
+ * @name: measureAndDisplayMQ2
+ * ----------------------------
+ * @brief: Reads gas concentration from the MQ2 sensor. Displays the value on the LCD and
+ *         checks thresholds to trigger warnings.
+ */
+void measureAndDisplayMQ2()
+{
   /* Read the ADC value from the MQ2 sensor */
   mq2Value = analogRead(mq2Pin);
 
@@ -456,13 +540,16 @@ void measureAndDisplayMQ2() {
   lcd.print("Gas Value: ");
 
   /* Check if the MQ2 value is within the safe range */
-  if (mq2Value >= GAS_MIN && mq2Value <= GAS_THRESHOLD) {
+  if (mq2Value >= GAS_MIN && mq2Value <= GAS_THRESHOLD)
+  {
     /* Clear any previous value at the cursor position and reset the gas value to zero */
     lcd.setCursor(11, 3);
     lcd.print(" ");
     mq2Value = 0;
     lcd.print(mq2Value);
-  } else {
+  }
+  else
+  {
     /* If the gas value exceeds the safe range, display it directly */
     lcd.print(mq2Value);
   }
@@ -474,60 +561,86 @@ void measureAndDisplayMQ2() {
   vTaskDelay(500 / portTICK_PERIOD_MS);
 }
 
-void updateLeds(float temperature) {
+/*
+ * @name: updateLeds
+ * ----------------------------
+ * @brief: Controls the LEDs (green, yellow, red) based on the temperature thresholds to indicate the current temperature range.
+ */
+void updateLeds(float temperature)
+{
   /* If the temperature is between the minimum threshold and the first average threshold,
      turn on the green LED and turn off the yellow and red LEDs */
-  if (temperature >= THRESHOLD_TEMP_MIN && temperature <= THRESHOLD_TEMP_AVG1) {
+  if (temperature >= THRESHOLD_TEMP_MIN && temperature <= THRESHOLD_TEMP_AVG1)
+  {
     digitalWrite(greenLedPin, HIGH);
     digitalWrite(yellowLedPin, LOW);
     digitalWrite(redLedPin, LOW);
   }
   /* If the temperature is between the first and second average thresholds,
      turn on the yellow LED and turn off the green and red LEDs */
-  else if (temperature > THRESHOLD_TEMP_AVG1 && temperature <= THRESHOLD_TEMP_AVG2) {
+  else if (temperature > THRESHOLD_TEMP_AVG1 && temperature <= THRESHOLD_TEMP_AVG2)
+  {
     digitalWrite(greenLedPin, LOW);
     digitalWrite(yellowLedPin, HIGH);
     digitalWrite(redLedPin, LOW);
   }
   /* If the temperature is between the second average threshold and the maximum threshold,
      turn on the red LED and turn off the green and yellow LEDs */
-  else if (temperature > THRESHOLD_TEMP_AVG2 && temperature <= THRESHOLD_TEMP_MAX) {
+  else if (temperature > THRESHOLD_TEMP_AVG2 && temperature <= THRESHOLD_TEMP_MAX)
+  {
     digitalWrite(greenLedPin, LOW);
     digitalWrite(yellowLedPin, LOW);
     digitalWrite(redLedPin, HIGH);
   }
   /* If the temperature is outside the allowed range, turn off all LEDs */
-  else {
+  else
+  {
     digitalWrite(greenLedPin, LOW);
     digitalWrite(yellowLedPin, LOW);
     digitalWrite(redLedPin, LOW);
   }
 }
 
-void checkTemperLevel(float temperature) {
+/*
+ * @name: checkTemperLevel
+ * ----------------------------
+ * @brief: Checks the temperature thresholds and triggers the buzzer and warnings if the values exceed safe limits.
+ */
+void checkTemperLevel(float temperature)
+{
   /* If the temperature is greater than the first threshold and less than or equal to the second threshold */
-  if (temperature > THRESHOLD_TEMP_AVG1 && temperature <= THRESHOLD_TEMP_AVG2) {
+  if (temperature > THRESHOLD_TEMP_AVG1 && temperature <= THRESHOLD_TEMP_AVG2)
+  {
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Temperature is hot");
     buzzerOn();
   }
   /* If the temperature is between the second threshold and the maximum threshold */
-  else if (temperature > THRESHOLD_TEMP_AVG2 && temperature <= THRESHOLD_TEMP_MAX) {
+  else if (temperature > THRESHOLD_TEMP_AVG2 && temperature <= THRESHOLD_TEMP_MAX)
+  {
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Temperature is very hot");
     buzzerOn();
   }
   /* If the temperature is outside the allowed range, deactivate the buzzer */
-  else {
+  else
+  {
     buzzerOff();
   }
 }
 
-void checkGasLevel(int mq2Value) {
+/*
+ * @name: checkGasLevel
+ * ----------------------------
+ * @brief: Checks the gas concentration thresholds and triggers the buzzer and warnings if the values exceed safe limits.
+ */
+void checkGasLevel(int mq2Value)
+{
   /* Check if the MQ2 sensor value exceeds the gas threshold */
-  if (mq2Value > GAS_THRESHOLD) {
+  if (mq2Value > GAS_THRESHOLD)
+  {
     /* Clear the LCD display */
     lcd.clear();
     /* Set the cursor to the first row and print the warning message */
@@ -539,13 +652,21 @@ void checkGasLevel(int mq2Value) {
 
     /* Activate the buzzer if the gas value is above the threshold */
     buzzerOn();
-  } else {
+  }
+  else
+  {
     /* Deactivate the buzzer if the gas value is within a safe range */
     buzzerOff();
   }
 }
 
-void buzzerOn() {
+/*
+ * @name: buzzerOn
+ * ----------------------------
+ * @brief: Activates the buzzer with a warning signal.
+ */
+void buzzerOn()
+{
   /* Set the buzzer pin to HIGH to activate the buzzer */
   digitalWrite(buzzerPin, HIGH);
   /* Wait for 800 milliseconds while the buzzer remains on */
@@ -556,7 +677,13 @@ void buzzerOn() {
   delay(250);
 }
 
-void buzzerOff() {
+/*
+ * @name: buzzerOff
+ * ----------------------------
+ * @brief: Deactivates the buzzer when conditions are safe.
+ */
+void buzzerOff()
+{
   /* Ensure the buzzer pin is set to LOW, turning the buzzer off */
   digitalWrite(buzzerPin, LOW);
 }
