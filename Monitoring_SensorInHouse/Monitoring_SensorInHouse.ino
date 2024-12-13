@@ -56,8 +56,6 @@
 /* Define I2C address and dimensions for 20x4 LCD */
 LiquidCrystal_I2C lcd(0x27, 20, 4); /* LCD object with I2C address 0x27 and size 20x4 */
 
-DHT dht(dhtPin, DHTTYPE); /* Initialize DHT sensor with pin and type */
-
 /*******************************************************************************
  * Task Handle
  ******************************************************************************/
@@ -128,6 +126,8 @@ int button2State = 0; /* Current state of Button 2 */
 int button3State = 0; /* Current state of Button 3 */
 int button4State = 0; /* Current state of Button 4 */
 int button5State = 0; /* Current state of Button 5 */
+
+DHT dht(dhtPin, DHTTYPE); /* Initialize DHT sensor with pin and type */
 
 /*******************************************************************************
  * Init System
